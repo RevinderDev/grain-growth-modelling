@@ -9,13 +9,15 @@
  Explanation video: http://youtu.be/mdTeqiWyFnc
 """
 import random
+from copy import deepcopy
 
 import pygame
 
 from src.color import RandomColorDictionary
+from collections import Counter
 
 
-class Grid:
+class GridClass:
 
     def __init__(self):
 
@@ -29,10 +31,10 @@ class Grid:
         # This sets the margin between each cell
         self.MARGIN = 1
 
-    def init_grid(self, X, Y):
+    def init_grid(self, x, y):
         # Define grid sizes
-        self.GRID_SIZE_X = X
-        self.GRID_SIZE_Y = Y
+        self.GRID_SIZE_X = x
+        self.GRID_SIZE_Y = y
 
         # Create a 2 dimensional array. A two dimensional
         # array is simply a list of lists.
@@ -47,7 +49,7 @@ class Grid:
         # Set row 1, cell 5 to one. (Remember rows and
         # column numbers start at zero.)
         # self.grid[1][5] = 1
-        #self.grid[19][19] = 1
+        # self.grid[19][19] = 1
 
     def clean_grid(self):
         for row in range(self.GRID_SIZE_X):
@@ -63,13 +65,13 @@ class Grid:
 
 class PyGameWindow:
 
-    def __init__(self, Grid):
+    def __init__(self, grid):
         # Initialize pygame
         pygame.init()
         # Set the HEIGHT and WIDTH of the screen
         # WINDOW_SIZE = [600, 600]
-        self.WINDOW_SIZE = [Grid.GRID_SIZE_Y * (Grid.HEIGHT + Grid.MARGIN) + Grid.MARGIN,
-                            Grid.GRID_SIZE_X * (Grid.WIDTH + Grid.MARGIN) + Grid.MARGIN]
+        self.WINDOW_SIZE = [grid.GRID_SIZE_Y * (grid.HEIGHT + grid.MARGIN) + grid.MARGIN,
+                            grid.GRID_SIZE_X * (grid.WIDTH + grid.MARGIN) + grid.MARGIN]
         self.screen = pygame.display.set_mode(self.WINDOW_SIZE)
 
         # Set title of screen
@@ -78,53 +80,54 @@ class PyGameWindow:
         # Loop until the user clicks the close button.
         self.done = False
         self.color_class = RandomColorDictionary()
+        self.gridClass = grid
 
         # Used to manage how fast the screen updates
         self.clock = pygame.time.Clock()
-        self.main_loop(Grid)
+        self.main_loop()
 
-    def moore_growth(self, Grid, row, column):
-        grain_to_grow = []
-        color_to_grow = Grid.grid[row][column]
-        grain_to_grow.append(color_to_grow)
+    def determine_color(self, array_of_neighbours):
+        color_dict = {}
+        for i in range(0, len(array_of_neighbours)):
+            if array_of_neighbours[i] != 0:
+                color_dict[array_of_neighbours[i]] = color_dict.get(array_of_neighbours[i], 0) + 1
 
-        if column + 1 < Grid.GRID_SIZE_Y:
-            grain_to_grow.append(row)
-            grain_to_grow.append(column + 1)
+        if color_dict.__len__() == 0:
+            return 0
+        else:
+            return max(color_dict)
 
-        if row - 1 >= 0 and column + 1 < Grid.GRID_SIZE_Y:
-            grain_to_grow.append(row - 1)
-            grain_to_grow.append(column + 1)
+    def moore_growth(self, old_grid, row, column):
+        neighbours = []
+
+        if column + 1 < self.gridClass.GRID_SIZE_Y:
+            neighbours.append(old_grid[row][column + 1])
+
+        if row - 1 >= 0 and column + 1 < self.gridClass.GRID_SIZE_Y:
+            neighbours.append(old_grid[row - 1][column + 1])
 
         if row - 1 >= 0:
-            grain_to_grow.append(row - 1)
-            grain_to_grow.append(column)
+            neighbours.append(old_grid[row - 1][column])
 
         if row - 1 >= 0 and column - 1 >= 0:
-            grain_to_grow.append(row - 1)
-            grain_to_grow.append(column - 1)
+            neighbours.append(old_grid[row - 1][column - 1])
 
         if column - 1 >= 0:
-            grain_to_grow.append(row)
-            grain_to_grow.append(column - 1)
+            neighbours.append(old_grid[row][column - 1])
 
-        if row + 1 < Grid.GRID_SIZE_X and column - 1 >= 0:
-            grain_to_grow.append(row + 1)
-            grain_to_grow.append(column - 1)
+        if row + 1 < self.gridClass.GRID_SIZE_X and column - 1 >= 0:
+            neighbours.append(old_grid[row + 1][column - 1])
 
-        if row + 1 < Grid.GRID_SIZE_X:
-            grain_to_grow.append(row + 1)
-            grain_to_grow.append(column)
+        if row + 1 < self.gridClass.GRID_SIZE_X:
+            neighbours.append(old_grid[row + 1][column])
 
-        if row + 1 < Grid.GRID_SIZE_X and column + 1 < Grid.GRID_SIZE_X:
-            grain_to_grow.append(row + 1)
-            grain_to_grow.append(column + 1)
+        if row + 1 < self.gridClass.GRID_SIZE_X and column + 1 < self.gridClass.GRID_SIZE_X:
+            neighbours.append(old_grid[row + 1][column + 1])
 
+        color_to_paint = self.determine_color(neighbours)
+        self.gridClass.grid[row][column] = color_to_paint
 
-        return grain_to_grow
-
-
-    def main_loop(self, Grid):
+    def main_loop(self):
         # -------- Main Program Loop -----------
         while not self.done:
             for event in pygame.event.get():  # User did something
@@ -134,45 +137,38 @@ class PyGameWindow:
                     # User clicks the mouse. Get the position
                     pos = pygame.mouse.get_pos()
                     # Change the x/y screen coordinates to grid coordinates
-                    column = pos[0] // (Grid.WIDTH + Grid.MARGIN)
-                    row = pos[1] // (Grid.HEIGHT + Grid.MARGIN)
-                    # Set that location to one
-                    Grid.grid[row][column] = random.choice(list(self.color_class.colors))
+                    column = pos[0] // (self.gridClass.WIDTH + self.gridClass.MARGIN)
+                    row = pos[1] // (self.gridClass.HEIGHT + self.gridClass.MARGIN)
+                    # Set that location to random color
+                    self.gridClass.grid[row][column] = random.choice(list(self.color_class.colors))
                     # TEST Methods of click in here
                     print("Click ", pos, "Grid coordinates: ", row, column)
+
+            # Check grid for neighbours
+            if self.gridClass.grain_growth:
+                old_grid = deepcopy(self.gridClass.grid)
+                for row in range(self.gridClass.GRID_SIZE_X):
+                    for column in range(self.gridClass.GRID_SIZE_Y):
+                        # MOORE test
+                        if old_grid[row][column] == 0:
+                            if self.gridClass.neighbourhood_type == 'Moore':
+                                self.moore_growth(old_grid, row, column)
 
             # Set the screen background
             self.screen.fill(self.color_class.colors['black'])
 
             # Draw the grid
-            grains_to_grow = []
-            for row in range(Grid.GRID_SIZE_X):
-                for column in range(Grid.GRID_SIZE_Y):
+            for row in range(self.gridClass.GRID_SIZE_X):
+                for column in range(self.gridClass.GRID_SIZE_Y):
                     color = self.color_class.colors['white']
-                    if Grid.grid[row][column] != 0:
-                        if Grid.grain_growth == True:
-                            # MOORE test
-                            if Grid.neighbourhood_type == 'Moore':
-                                grain_to_grow = self.moore_growth(Grid, row, column)
-                                grains_to_grow.append(grain_to_grow)
-                                grain_to_grow = []
-
-                        color = self.color_class.colors[Grid.grid[row][column]]
+                    if self.gridClass.grid[row][column] != 0:
+                        color = self.color_class.colors[self.gridClass.grid[row][column]]
                     pygame.draw.rect(self.screen,
                                      color,
-                                     [(Grid.MARGIN + Grid.WIDTH) * column + Grid.MARGIN,
-                                      (Grid.MARGIN + Grid.HEIGHT) * row + Grid.MARGIN,
-                                      Grid.WIDTH,
-                                      Grid.HEIGHT])
-
-            if Grid.grain_growth == True:
-                for i in range(0, len(grains_to_grow)):
-                    for j in range(1, len(grains_to_grow[i]), 2):
-                        row = grains_to_grow[i][j]
-                        column = grains_to_grow[i][j+1]
-                        Grid.grid[row][column] = grains_to_grow[i][0]
-            grains_to_grow = []
-
+                                     [(self.gridClass.MARGIN + self.gridClass.WIDTH) * column + self.gridClass.MARGIN,
+                                      (self.gridClass.MARGIN + self.gridClass.HEIGHT) * row + self.gridClass.MARGIN,
+                                      self.gridClass.WIDTH,
+                                      self.gridClass.HEIGHT])
             # Limit to 60 frames per second
             self.clock.tick(60)
 

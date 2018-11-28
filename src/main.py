@@ -1,6 +1,6 @@
 import wx
 import threading
-from src.grid_drawing import Grid, PyGameWindow
+from src.grid_drawing import GridClass, PyGameWindow
 
 
 class Frame(wx.Frame):
@@ -167,7 +167,7 @@ class DrawingThread(threading.Thread):
         super(DrawingThread, self).__init__()
         self.x = 100
         self.y = 100
-        self.grid = Grid()
+        self.grid = GridClass()
 
     def run(self):
         self.grid.init_grid(self.x, self.y)
