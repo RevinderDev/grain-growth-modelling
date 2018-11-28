@@ -14,7 +14,6 @@ from copy import deepcopy
 import pygame
 
 from src.color import RandomColorDictionary
-from collections import Counter
 
 
 class GridClass:
@@ -27,6 +26,8 @@ class GridClass:
         # This sets the WIDTH and HEIGHT of each grid location
         self.WIDTH = 7
         self.HEIGHT = 7
+
+        self.GROWTH_SPEED = 60
 
         # This sets the margin between each cell
         self.MARGIN = 1
@@ -61,6 +62,16 @@ class GridClass:
 
     def set_grain_growth(self, grain_growth_bool):
         self.grain_growth = grain_growth_bool
+
+    def randomize_cells(self, value):
+        color_dict = RandomColorDictionary()
+        if value > self.GRID_SIZE_X * self.GRID_SIZE_Y:
+            value = self.GRID_SIZE_X * self.GRID_SIZE_Y
+        for i in range(value):
+            random_row = random.randint(0, self.GRID_SIZE_X-1)
+            random_column = random.randint(0, self.GRID_SIZE_Y-1)
+            random_color = random.choice(list(color_dict.colors.keys()))
+            self.grid[random_row][random_column] = random_color
 
 
 class PyGameWindow:
@@ -127,6 +138,48 @@ class PyGameWindow:
         color_to_paint = self.determine_color(neighbours)
         self.gridClass.grid[row][column] = color_to_paint
 
+    def von_neumann_growth(self, old_grid, row, column):
+        neighbours = []
+
+        if column + 1 < self.gridClass.GRID_SIZE_Y:
+            neighbours.append(old_grid[row][column + 1])
+
+        if row - 1 >= 0:
+            neighbours.append(old_grid[row - 1][column])
+
+        if column - 1 >= 0:
+            neighbours.append(old_grid[row][column - 1])
+
+        if row + 1 < self.gridClass.GRID_SIZE_X:
+            neighbours.append(old_grid[row + 1][column])
+
+        color_to_paint = self.determine_color(neighbours)
+        self.gridClass.grid[row][column] = color_to_paint
+
+    def hexagonal_left_growth(self, old_grid, row, column):
+        # TODO 1:
+        neighbours = []
+        # color_to_paint = self.determine_color(neighbours)
+        # self.gridClass.grid[row][column] = color_to_paint
+
+    def hexagonal_right_growth(self, old_grid, row, column):
+        # TODO 2:
+        neighbours = []
+        # color_to_paint = self.determine_color(neighbours)
+        # self.gridClass.grid[row][column] = color_to_paint
+
+    def hexagonal_random_growth(self, old_grid, row, column):
+        # TODO 3:
+        neighbours = []
+        # color_to_paint = self.determine_color(neighbours)
+        # self.gridClass.grid[row][column] = color_to_paint
+
+    def pentagonal_random_growth(self, old_grid, row, column):
+        # TODO 4:
+        neighbours = []
+        # color_to_paint = self.determine_color(neighbours)
+        # self.gridClass.grid[row][column] = color_to_paint
+
     def main_loop(self):
         # -------- Main Program Loop -----------
         while not self.done:
@@ -153,6 +206,16 @@ class PyGameWindow:
                         if old_grid[row][column] == 0:
                             if self.gridClass.neighbourhood_type == 'Moore':
                                 self.moore_growth(old_grid, row, column)
+                            elif self.gridClass.neighbourhood_type == 'Von Neumann':
+                                self.von_neumann_growth(old_grid, row, column)
+                            elif self.gridClass.neighbourhood_type == 'Hexagonal Left':
+                                self.hexagonal_left_growth(old_grid, row, column)
+                            elif self.gridClass.neighbourhood_type == 'Hexagonal Right':
+                                self.hexagonal_right_growth(old_grid, row, column)
+                            elif self.gridClass.neighbourhood_type == 'Random Hexagonal':
+                                self.hexagonal_random_growth(old_grid, row, column)
+                            elif self.gridClass.neighbourhood_type == 'Random Pentagonal':
+                                self.pentagonal_random_growth(old_grid, row, column)
 
             # Set the screen background
             self.screen.fill(self.color_class.colors['black'])
@@ -170,7 +233,7 @@ class PyGameWindow:
                                       self.gridClass.WIDTH,
                                       self.gridClass.HEIGHT])
             # Limit to 60 frames per second
-            self.clock.tick(60)
+            self.clock.tick(self.gridClass.GROWTH_SPEED)
 
             # Go ahead and update the screen with what we've drawn.
             pygame.display.flip()

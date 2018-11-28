@@ -16,8 +16,9 @@ class Frame(wx.Frame):
         self.init_grid_size()
         self.init_neigh_combo_box()
         self.init_create_grid_button()
-
-
+        self.init_fps_input()
+        self.init_random_cells()
+        self.init_cells_control_buttons()
 
         self.init_control_buttons()
 
@@ -27,8 +28,56 @@ class Frame(wx.Frame):
         self.Layout()
         self.Centre(wx.BOTH)
         # and a status bar
-        self.CreateStatusBar()
-        self.SetStatusText("Welcome to student project of grain growth!")
+        self.statusBar = self.CreateStatusBar()
+        self.statusBar.SetStatusText("Welcome to student project of grain growth!")
+
+    def init_cells_control_buttons(self):
+        sizer_hor_cells_control_buttons = wx.BoxSizer(wx.HORIZONTAL)
+
+        # --- Start button ---
+        self.random_cells_button = wx.Button(self, wx.ID_ANY, u"Completly Random", wx.DefaultPosition,
+                                             wx.DefaultSize, 0)
+        self.random_cells_button.Bind(wx.EVT_BUTTON, self.on_random_cells)
+        sizer_hor_cells_control_buttons.Add(self.random_cells_button, 5, wx.EXPAND, 5)
+
+        # --- Pause button ---
+        self.evenly_cells_button = wx.Button(self, wx.ID_ANY, u"Evenly", wx.DefaultPosition,
+                                             wx.DefaultSize, 0)
+        self.evenly_cells_button.Bind(wx.EVT_BUTTON, self.on_evenly_cells)
+        sizer_hor_cells_control_buttons.Add(self.evenly_cells_button, 5, wx.EXPAND, 5)
+
+        self.sizer_ver_input.Add(sizer_hor_cells_control_buttons, 0, wx.EXPAND, 5)
+
+    def init_random_cells(self):
+        sizer_hor_random_grains = wx.BoxSizer(wx.HORIZONTAL)
+        self.label_grains_input = wx.StaticText(self, wx.ID_ANY, u"Number of initial grains:", wx.DefaultPosition,
+                                                wx.DefaultSize, 0)
+        self.label_grains_input.SetFont(wx.Font(wx.FontInfo(self.font_size)))
+        self.label_grains_input.Wrap(-1)
+        self.input_grains = wx.TextCtrl(self, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, 0)
+        self.input_grains.SetValue("0")
+
+        sizer_hor_random_grains.Add(self.label_grains_input, 0, wx.ALL, 5)
+        sizer_hor_random_grains.Add(self.input_grains, 0, wx.ALL, 5)
+        self.sizer_ver_input.Add(sizer_hor_random_grains)
+
+    def init_fps_input(self):
+        sizer_hor_fps = wx.BoxSizer(wx.HORIZONTAL)
+        self.label_fps_input = wx.StaticText(self, wx.ID_ANY, u"Speed of growth [FPS]:", wx.DefaultPosition,
+                                             wx.DefaultSize, 0)
+        self.label_fps_input.SetFont(wx.Font(wx.FontInfo(self.font_size)))
+        self.label_fps_input.Wrap(-1)
+        self.input_fps = wx.TextCtrl(self, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, 0)
+        self.input_fps.SetValue("60")
+
+        self.apply_fps_button = wx.Button(self, wx.ID_ANY, u"Apply FPS change", wx.DefaultPosition,
+                                          wx.DefaultSize, 0)
+        self.apply_fps_button.Bind(wx.EVT_BUTTON, self.on_fps_click)
+        sizer_hor_fps.Add(self.apply_fps_button, 5, wx.EXPAND, 5)
+
+        sizer_hor_fps.Add(self.label_fps_input, 0, wx.ALL, 5)
+        sizer_hor_fps.Add(self.input_fps, 0, wx.ALL, 5)
+        self.sizer_ver_input.Add(sizer_hor_fps)
 
     def init_control_buttons(self):
         sizer_ver_control_buttons = wx.BoxSizer(wx.HORIZONTAL)
@@ -42,17 +91,16 @@ class Frame(wx.Frame):
         # --- Pause button ---
         self.pause_drawing_grid_button = wx.Button(self, wx.ID_ANY, u"Pause", wx.DefaultPosition,
                                                    wx.DefaultSize, 0)
-        self.pause_drawing_grid_button .Bind(wx.EVT_BUTTON, self.on_pause)
-        sizer_ver_control_buttons.Add(self.pause_drawing_grid_button , 5, wx.EXPAND, 5)
+        self.pause_drawing_grid_button.Bind(wx.EVT_BUTTON, self.on_pause)
+        sizer_ver_control_buttons.Add(self.pause_drawing_grid_button, 5, wx.EXPAND, 5)
 
         # --- Clean button ---
         self.clean_grid_button = wx.Button(self, wx.ID_ANY, u"Clean", wx.DefaultPosition,
-                                                   wx.DefaultSize, 0)
-        self.clean_grid_button .Bind(wx.EVT_BUTTON, self.on_clean)
-        sizer_ver_control_buttons.Add(self.clean_grid_button , 5, wx.EXPAND, 5)
+                                           wx.DefaultSize, 0)
+        self.clean_grid_button.Bind(wx.EVT_BUTTON, self.on_clean)
+        sizer_ver_control_buttons.Add(self.clean_grid_button, 5, wx.EXPAND, 5)
 
         self.sizer_ver_input.Add(sizer_ver_control_buttons, 0, wx.EXPAND, 5)
-
 
     def init_neigh_combo_box(self):
         sizer_hor_neigh = wx.BoxSizer(wx.HORIZONTAL)
@@ -122,10 +170,10 @@ class Frame(wx.Frame):
     def init_create_grid_button(self):
         # --- Start drawing button ---
         self.create_drawing_grid_button = wx.Button(self, wx.ID_ANY, u"Create drawing grid", wx.DefaultPosition,
-                                                   wx.DefaultSize, 0)
-        self.create_drawing_grid_button .Bind(wx.EVT_BUTTON, self.create_grid)
+                                                    wx.DefaultSize, 0)
+        self.create_drawing_grid_button.Bind(wx.EVT_BUTTON, self.create_grid)
 
-        self.sizer_ver_input.Add(self.create_drawing_grid_button , 0, wx.EXPAND, 5)
+        self.sizer_ver_input.Add(self.create_drawing_grid_button, 0, wx.EXPAND, 5)
 
     def __init__(self, parent):
         wx.Frame.__init__(self, parent, id=wx.ID_ANY, title="Grain Growth", pos=wx.DefaultPosition,
@@ -133,15 +181,34 @@ class Frame(wx.Frame):
         self.is_thread_alive = False
         self.init_ui()
 
+    def on_fps_click(self, event):
+        fps = int(self.input_fps.GetValue())
+        if fps > 100 or fps <= 0:
+            self.error_dialog = wx.MessageDialog(self, 'Value has to be between 0 and 100.', 'Error changing FPS!',
+                                                 wx.ICON_ERROR)
+            val = self.error_dialog.ShowModal()
+            self.error_dialog.Show()
+            if val == wx.ID_CANCEL:
+                self.error_dialog.Destroy()
+                return
+        self.drawing_thread.set_fps(fps)
 
-    def on_pause(self,event):
+
+    def on_random_cells(self, event):
+        grain_number = int(self.input_grains.GetValue())
+        self.drawing_thread.grid.randomize_cells(grain_number)
+
+    def on_evenly_cells(self, event):
+        do_nothing = []
+
+    def on_pause(self, event):
         self.drawing_thread.grid.grain_growth = False
 
     def on_start(self, event):
         self.drawing_thread.neigh_choice = self.neigh_combo.GetValue()
         self.drawing_thread.grid.grain_growth = True
 
-    def on_clean(self,event):
+    def on_clean(self, event):
         self.drawing_thread.grid.clean_grid()
 
     def change_neighbourhood(self, event):
@@ -151,6 +218,14 @@ class Frame(wx.Frame):
     def create_grid(self, event):
         x_coordinate = int(self.input_grid_size_x.GetValue())
         y_coordinate = int(self.input_grid_size_y.GetValue())
+        if x_coordinate <= 0 or y_coordinate <= 0:
+            self.error_dialog = wx.MessageDialog(self, 'Size cannot be negative.', 'Error creating grid!',
+                                                 wx.ICON_ERROR)
+            val = self.error_dialog.ShowModal()
+            self.error_dialog.Show()
+            if val == wx.ID_CANCEL:
+                self.error_dialog.Destroy()
+                return
         self.drawing_thread = DrawingThread()
         self.drawing_thread.set_coords(x_coordinate, y_coordinate)
         self.drawing_thread.start()
@@ -182,12 +257,12 @@ class DrawingThread(threading.Thread):
     def neigh_choice(self, value):
         self.grid.neighbourhood_type = value
 
-
     def set_coords(self, x, y):
-        if x <= 0 or y <= 0:
-            raise ValueError("Coords cannot be negative!")
         self.x = x
         self.y = y
+
+    def set_fps(self, value):
+        self.grid.GROWTH_SPEED = value
 
 
 if __name__ == '__main__':
