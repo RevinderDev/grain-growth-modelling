@@ -16,6 +16,7 @@ class Frame(wx.Frame):
         self.init_grid_size()
         self.init_neigh_combo_box()
         self.init_create_grid_button()
+        self.init_bound_combo_box()
         self.init_fps_input()
         self.init_random_cells()
         self.init_cells_control_buttons()
@@ -30,6 +31,25 @@ class Frame(wx.Frame):
         # and a status bar
         self.statusBar = self.CreateStatusBar()
         self.statusBar.SetStatusText("Welcome to student project of grain growth!")
+
+    def init_bound_combo_box(self):
+        sizer_hor_bound = wx.BoxSizer(wx.HORIZONTAL)
+
+        # --- Label neigh choice ----
+        self.label_bound_choice = wx.StaticText(self, wx.ID_ANY, u"Choose neighbourhood:", wx.DefaultPosition,
+                                                wx.DefaultSize, 0)
+        self.label_bound_choice.SetFont(wx.Font(wx.FontInfo(self.font_size)))
+        self.label_bound_choice.Wrap(-1)
+        # --- Neighboor combo box ---
+        self.bound_choices_array = ['Periodical', 'Non periodical']
+        self.bound_combo = wx.ComboBox(self, wx.ID_ANY, "Non periodical", choices=self.bound_choices_array)
+        self.bound_combo.Bind(wx.EVT_COMBOBOX, self.change_bound)
+
+        sizer_hor_bound.Add(self.label_bound_choice, 0, wx.ALL, 5)
+        sizer_hor_bound.Add(self.bound_combo, 0, wx.ALL, 5)
+
+        self.sizer_ver_input.Add(sizer_hor_bound, 0, wx.ALL, 5)
+
 
     def init_cells_control_buttons(self):
         sizer_hor_cells_control_buttons = wx.BoxSizer(wx.HORIZONTAL)
@@ -215,6 +235,10 @@ class Frame(wx.Frame):
         print("Chosen neighbourhood: " + self.neigh_combo.GetValue())
         self.drawing_thread.neigh_choice = self.neigh_combo.GetValue()
 
+    def change_bound(self, event):
+        print("Chosen bounds: " + self.bound_combo.GetValue())
+        self.drawing_thread.bound_choice = self.bound_combo.GetValue()
+
     def create_grid(self, event):
         x_coordinate = int(self.input_grid_size_x.GetValue())
         y_coordinate = int(self.input_grid_size_y.GetValue())
@@ -247,7 +271,7 @@ class DrawingThread(threading.Thread):
     def run(self):
         self.grid.init_grid(self.x, self.y)
         self.grid_window = PyGameWindow(self.grid)
-        self.grid_window.main_loop(self.grid)
+        self.grid_window.main_loop()
 
     @property
     def neigh_choice(self):
@@ -256,6 +280,14 @@ class DrawingThread(threading.Thread):
     @neigh_choice.setter
     def neigh_choice(self, value):
         self.grid.neighbourhood_type = value
+
+    @property
+    def bound_choice(self):
+        return self.grid.bound_choice
+
+    @bound_choice.setter
+    def bound_choice(self, value):
+        self.grid.bound_choice = value
 
     def set_coords(self, x, y):
         self.x = x
