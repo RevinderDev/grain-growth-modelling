@@ -120,7 +120,22 @@ class GridClass:
         # print("ACTUAL CELLS = " + str(ACTUAL_CELLS))
 
     def evenly_cells(self, cell_amount):
+        color_dict = RandomColorDictionary()
         ratio = self.GRID_SIZE_X / self.GRID_SIZE_Y
+        sqrt_cell_amount = math.ceil(math.sqrt(int(cell_amount)))
+        points_x = ratio * sqrt_cell_amount
+        points_y = sqrt_cell_amount / ratio
+        step_y = int(self.GRID_SIZE_Y / (points_y + 1))
+        step_x = int(self.GRID_SIZE_X / (points_x + 1))
+        for j in range(0, self.GRID_SIZE_Y, step_y):
+            for i in range(0, self.GRID_SIZE_X, step_x):
+                row = i
+                column = j
+                color = random.choice(list(color_dict.colors.keys()))
+                self.grid[row][column] = color
+
+
+
 
 
 class PyGameWindow:
@@ -181,7 +196,7 @@ class PyGameWindow:
         if row + 1 < self.gridClass.GRID_SIZE_X:
             neighbours.append(old_grid[row + 1][column])
 
-        if row + 1 < self.gridClass.GRID_SIZE_X and column + 1 < self.gridClass.GRID_SIZE_X:
+        if row + 1 < self.gridClass.GRID_SIZE_X and column + 1 < self.gridClass.GRID_SIZE_Y:
             neighbours.append(old_grid[row + 1][column + 1])
 
         if self.gridClass.bound_choice == 'Periodical':
@@ -206,7 +221,7 @@ class PyGameWindow:
             if row + 1 == self.gridClass.GRID_SIZE_X:
                 neighbours.append(old_grid[0][column])
 
-            if row + 1 == self.gridClass.GRID_SIZE_X and column + 1 == self.gridClass.GRID_SIZE_X:
+            if row + 1 == self.gridClass.GRID_SIZE_X and column + 1 == self.gridClass.GRID_SIZE_Y:
                 neighbours.append(old_grid[0][0])
 
         color_to_paint = self.determine_color(neighbours)
@@ -305,7 +320,7 @@ class PyGameWindow:
         if row - 1 >= 0 and column - 1 >= 0:
             neighbours.append(old_grid[row - 1][column - 1])
 
-        if row + 1 < self.gridClass.GRID_SIZE_X and column + 1 < self.gridClass.GRID_SIZE_X:
+        if row + 1 < self.gridClass.GRID_SIZE_X and column + 1 < self.gridClass.GRID_SIZE_Y:
             neighbours.append(old_grid[row + 1][column + 1])
 
         if self.gridClass.bound_choice == 'Periodical':
@@ -325,7 +340,7 @@ class PyGameWindow:
             if row - 1 == -1 and column - 1 == -1:
                 neighbours.append(old_grid[self.gridClass.GRID_SIZE_X - 1][self.gridClass.GRID_SIZE_Y - 1])
 
-            if row + 1 == self.gridClass.GRID_SIZE_X and column + 1 == self.gridClass.GRID_SIZE_X:
+            if row + 1 == self.gridClass.GRID_SIZE_X and column + 1 == self.gridClass.GRID_SIZE_Y:
                 neighbours.append(old_grid[0][0])
 
         color_to_paint = self.determine_color(neighbours)
@@ -451,7 +466,7 @@ class PyGameWindow:
             # 0 1 1
             # 0 X 1
             # 0 1 1
-            if row + 1 < self.gridClass.GRID_SIZE_X and column + 1 < self.gridClass.GRID_SIZE_X:
+            if row + 1 < self.gridClass.GRID_SIZE_X and column + 1 < self.gridClass.GRID_SIZE_Y:
                 neighbours.append(old_grid[row + 1][column + 1])
 
             if column + 1 < self.gridClass.GRID_SIZE_Y:
