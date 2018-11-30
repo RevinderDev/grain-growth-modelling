@@ -19,6 +19,7 @@ class Frame(wx.Frame):
         self.init_bound_combo_box()
         self.init_fps_input()
         self.init_random_cells()
+        self.init_radius_random_input()
         self.init_cells_control_buttons()
 
         self.init_control_buttons()
@@ -31,6 +32,26 @@ class Frame(wx.Frame):
         # and a status bar
         self.statusBar = self.CreateStatusBar()
         self.statusBar.SetStatusText("Welcome to student project of grain growth!")
+
+    def init_radius_random_input(self):
+        sizer_hor_radius_grains = wx.BoxSizer(wx.HORIZONTAL)
+        # --- Label radius grain ---
+        self.label_radius_grain = wx.StaticText(self, wx.ID_ANY, u"Radius:", wx.DefaultPosition,
+                                                wx.DefaultSize, 0)
+        self.label_radius_grain.SetFont(wx.Font(wx.FontInfo(self.font_size)))
+        self.label_radius_grain.Wrap(-1)
+        # --- Input radius grain ---
+        self.input_radius_grains = wx.TextCtrl(self, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, 0)
+        self.input_radius_grains.SetValue("0")
+
+        self.radius_cells_button = wx.Button(self, wx.ID_ANY, u"Randomize with radius", wx.DefaultPosition,
+                                             wx.DefaultSize, 0)
+        self.radius_cells_button .Bind(wx.EVT_BUTTON, self.on_radius_cells)
+
+        sizer_hor_radius_grains.Add(self.label_radius_grain, 0, wx.ALL, 5)
+        sizer_hor_radius_grains.Add(self.input_radius_grains, 0, wx.ALL, 5)
+        sizer_hor_radius_grains.Add(self.radius_cells_button, 5, wx.EXPAND, 5)
+        self.sizer_ver_input.Add(sizer_hor_radius_grains)
 
     def init_bound_combo_box(self):
         sizer_hor_bound = wx.BoxSizer(wx.HORIZONTAL)
@@ -55,7 +76,7 @@ class Frame(wx.Frame):
         sizer_hor_cells_control_buttons = wx.BoxSizer(wx.HORIZONTAL)
 
         # --- Start button ---
-        self.random_cells_button = wx.Button(self, wx.ID_ANY, u"Completly Random", wx.DefaultPosition,
+        self.random_cells_button = wx.Button(self, wx.ID_ANY, u"Completely Random", wx.DefaultPosition,
                                              wx.DefaultSize, 0)
         self.random_cells_button.Bind(wx.EVT_BUTTON, self.on_random_cells)
         sizer_hor_cells_control_buttons.Add(self.random_cells_button, 5, wx.EXPAND, 5)
@@ -219,7 +240,7 @@ class Frame(wx.Frame):
         self.drawing_thread.grid.randomize_cells(grain_number)
 
     def on_evenly_cells(self, event):
-        do_nothing = []
+        self.drawing_thread.grid.evenly_cells(self.input_grains.GetValue())
 
     def on_pause(self, event):
         self.drawing_thread.grid.grain_growth = False
@@ -238,6 +259,13 @@ class Frame(wx.Frame):
     def change_bound(self, event):
         print("Chosen bounds: " + self.bound_combo.GetValue())
         self.drawing_thread.bound_choice = self.bound_combo.GetValue()
+
+    def on_radius_cells(self,event):
+        radius = int(self.input_radius_grains.GetValue())
+        grains = int(self.input_grains.GetValue())
+        self.drawing_thread.grid.randomize_radius_cells(radius, grains)
+
+
 
     def create_grid(self, event):
         x_coordinate = int(self.input_grid_size_x.GetValue())
