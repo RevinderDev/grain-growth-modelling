@@ -1108,6 +1108,7 @@ class RandomColorDictionary:
         self.colors['wheat3'] = WHEAT3
         self.colors['wheat4'] = WHEAT4
         self.colors['white'] = WHITE
+        self.colors[0] = WHITE
         self.colors['whitesmoke'] = WHITESMOKE
         self.colors['whitesmoke'] = WHITESMOKE
         self.colors['yellow1'] = YELLOW1
