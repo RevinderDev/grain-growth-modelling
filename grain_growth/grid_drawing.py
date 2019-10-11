@@ -4,7 +4,7 @@ from copy import deepcopy
 import pygame
 import math
 
-from src.color import RandomColorDictionary
+from .color import RandomColorDictionary
 
 
 class GridClass:
