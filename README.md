@@ -11,8 +11,9 @@ You can read about them more [here](https://en.wikipedia.org/wiki/Cellular_autom
 * Ability to pause and start on a whim.
 
 # Example gif!
-
-![](https://media.giphy.com/media/chzxShioR2Msc0RE3H/giphy.gif)
+<p align="center">
+  <img width="600" height="400" src="https://media.giphy.com/media/chzxShioR2Msc0RE3H/giphy.gif">
+</p>
 
 # Installation and running
 This does require some additional libraries so if you don't have them  you can simply install them by running:
