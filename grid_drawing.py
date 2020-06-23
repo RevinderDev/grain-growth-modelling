@@ -5,7 +5,7 @@ from typing import List
 import pygame
 import math
 
-from .color import RandomColorDictionary
+from color import RandomColorDictionary
 
 
 class GridClass:

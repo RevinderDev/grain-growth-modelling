@@ -1,6 +1,6 @@
 import wx
 import threading
-from grain_growth import GridClass, PyGameWindow
+from grid_drawing import GridClass, PyGameWindow
 
 
 class Frame(wx.Frame):
