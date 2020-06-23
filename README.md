@@ -15,17 +15,28 @@ You can read about them more [here](https://en.wikipedia.org/wiki/Cellular_autom
 ![](https://media.giphy.com/media/chzxShioR2Msc0RE3H/giphy.gif)
 
 # Installation and running
-This does require some additional libraries so if you don't have them  you can simply install them by running:
+Create venv first:
 ```
-pip install -r requirements.txt
+$ virtualenv $(your_project_name)
+```
+Run venv:
+```
+[Linux]   $ source $(your_project_name)/bin/activate 
+[Windows] C:\$(your_project_dir)\Scripts\activate
+```
+
+Install all dependencies:
+```
+$ pip install -r requirements.txt
 ```
 To run use:
 ```
-python main.py
+$ python main.py
 ```
 
 # Last words
 
-It can crash if you desire to open up more than 1 grid window at the time. You can close and create new one but it is currently not possible to have two at once.
-The limitation sadly comes from the pygame library which is used to draw said grid as it can have only one context window at once.
-Feel free to download the code and play with it however you like. Don't expect too much of it:)
+You cannot have 2 opens at one time.
+The limitation sadly comes from the PyGame library which is used to draw said grid as it can have only one context window at once.
+Feel free to download the code and play with it however you like. Don't expect too much of it, as it was only students project from years ago and it does include
+some terrible design flaws. Have fun!
