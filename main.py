@@ -4,13 +4,20 @@ from grain_growth import GridClass, PyGameWindow
 
 
 class Frame(wx.Frame):
+    FONT_SIZE = 9
+    MAX_FPS = 100
+    MIN_FPS = 0
 
-    def init_ui(self):
-        # --- Main sizers ---
+    def __init__(self, parent):
+        wx.Frame.__init__(self, parent, id=wx.ID_ANY, title="Grain Growth", pos=wx.DefaultPosition,
+                          size=wx.Size(325, 400), style=wx.DEFAULT_FRAME_STYLE | wx.TAB_TRAVERSAL)
+        self.is_thread_alive = False
         self.sizer_ver_main = wx.BoxSizer(wx.VERTICAL)
         self.sizer_ver_input = wx.BoxSizer(wx.VERTICAL)
-        self.font_size = 9
+        self.drawing_thread = None
+        self.init_ui()
 
+    def init_ui(self):
         # --- Init UI functions ---
         self.init_helpers()
         self.init_grid_size()
@@ -25,7 +32,7 @@ class Frame(wx.Frame):
         self.init_control_buttons()
 
         # --- Set main sizers ---
-        self.sizer_ver_main.Add(self.sizer_ver_input, 0, wx.EXPAND, 5)
+        self.sizer_ver_main.Add(self.sizer_ver_input, proportion=0, flag=wx.EXPAND, border=5)
         self.SetSizer(self.sizer_ver_main)
         self.Layout()
         self.Centre(wx.BOTH)
@@ -37,8 +44,8 @@ class Frame(wx.Frame):
         sizer_hor_radius_grains = wx.BoxSizer(wx.HORIZONTAL)
         # --- Label radius grain ---
         self.label_radius_grain = wx.StaticText(self, wx.ID_ANY, u"Radius:", wx.DefaultPosition,
-                                                wx.DefaultSize, 0)
-        self.label_radius_grain.SetFont(wx.Font(wx.FontInfo(self.font_size)))
+                                                wx.DefaultSize, style=0)
+        self.label_radius_grain.SetFont(wx.Font(wx.FontInfo(Frame.FONT_SIZE)))
         self.label_radius_grain.Wrap(-1)
         # --- Input radius grain ---
         self.input_radius_grains = wx.TextCtrl(self, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, 0)
@@ -56,14 +63,14 @@ class Frame(wx.Frame):
     def init_bound_combo_box(self):
         sizer_hor_bound = wx.BoxSizer(wx.HORIZONTAL)
 
-        # --- Label neigh choice ----
-        self.label_bound_choice = wx.StaticText(self, wx.ID_ANY, u"Choose neighbourhood:", wx.DefaultPosition,
-                                                wx.DefaultSize, 0)
-        self.label_bound_choice.SetFont(wx.Font(wx.FontInfo(self.font_size)))
+        self.label_bound_choice = wx.StaticText(self, wx.ID_ANY, u"Bounds:", wx.DefaultPosition,
+                                                wx.DefaultSize, style=0)
+        self.label_bound_choice.SetFont(wx.Font(wx.FontInfo(Frame.FONT_SIZE)))
         self.label_bound_choice.Wrap(-1)
-        # --- Neighboor combo box ---
+
         self.bound_choices_array = ['Periodical', 'Non periodical']
-        self.bound_combo = wx.ComboBox(self, wx.ID_ANY, "Non periodical", choices=self.bound_choices_array)
+        self.bound_combo = wx.ComboBox(self, wx.ID_ANY, value=self.bound_choices_array[0],
+                                       choices=self.bound_choices_array)
         self.bound_combo.Bind(wx.EVT_COMBOBOX, self.change_bound)
 
         sizer_hor_bound.Add(self.label_bound_choice, 0, wx.ALL, 5)
@@ -77,13 +84,13 @@ class Frame(wx.Frame):
 
         # --- Start button ---
         self.random_cells_button = wx.Button(self, wx.ID_ANY, u"Completely Random", wx.DefaultPosition,
-                                             wx.DefaultSize, 0)
+                                             wx.DefaultSize, style=0)
         self.random_cells_button.Bind(wx.EVT_BUTTON, self.on_random_cells)
         sizer_hor_cells_control_buttons.Add(self.random_cells_button, 5, wx.EXPAND, 5)
 
         # --- Pause button ---
         self.evenly_cells_button = wx.Button(self, wx.ID_ANY, u"Evenly", wx.DefaultPosition,
-                                             wx.DefaultSize, 0)
+                                             wx.DefaultSize, style=0)
         self.evenly_cells_button.Bind(wx.EVT_BUTTON, self.on_evenly_cells)
         sizer_hor_cells_control_buttons.Add(self.evenly_cells_button, 5, wx.EXPAND, 5)
 
@@ -91,9 +98,9 @@ class Frame(wx.Frame):
 
     def init_random_cells(self):
         sizer_hor_random_grains = wx.BoxSizer(wx.HORIZONTAL)
-        self.label_grains_input = wx.StaticText(self, wx.ID_ANY, u"Number of initial grains:", wx.DefaultPosition,
-                                                wx.DefaultSize, 0)
-        self.label_grains_input.SetFont(wx.Font(wx.FontInfo(self.font_size)))
+        self.label_grains_input = wx.StaticText(self, wx.ID_ANY, u"Grains:", wx.DefaultPosition,
+                                                wx.DefaultSize, style=0)
+        self.label_grains_input.SetFont(wx.Font(wx.FontInfo(Frame.FONT_SIZE)))
         self.label_grains_input.Wrap(-1)
         self.input_grains = wx.TextCtrl(self, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, 0)
         self.input_grains.SetValue("0")
@@ -104,14 +111,14 @@ class Frame(wx.Frame):
 
     def init_fps_input(self):
         sizer_hor_fps = wx.BoxSizer(wx.HORIZONTAL)
-        self.label_fps_input = wx.StaticText(self, wx.ID_ANY, u"Speed of growth [FPS]:", wx.DefaultPosition,
+        self.label_fps_input = wx.StaticText(self, wx.ID_ANY, u"Speed [FPS]:", wx.DefaultPosition,
                                              wx.DefaultSize, 0)
-        self.label_fps_input.SetFont(wx.Font(wx.FontInfo(self.font_size)))
+        self.label_fps_input.SetFont(wx.Font(wx.FontInfo(Frame.FONT_SIZE)))
         self.label_fps_input.Wrap(-1)
         self.input_fps = wx.TextCtrl(self, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, 0)
         self.input_fps.SetValue("60")
 
-        self.apply_fps_button = wx.Button(self, wx.ID_ANY, u"Apply FPS change", wx.DefaultPosition,
+        self.apply_fps_button = wx.Button(self, wx.ID_ANY, u"Apply change", wx.DefaultPosition,
                                           wx.DefaultSize, 0)
         self.apply_fps_button.Bind(wx.EVT_BUTTON, self.on_fps_click)
         sizer_hor_fps.Add(self.apply_fps_button, 5, wx.EXPAND, 5)
@@ -149,7 +156,7 @@ class Frame(wx.Frame):
         # --- Label neigh choice ----
         self.label_neigh_choice = wx.StaticText(self, wx.ID_ANY, u"Choose neighbourhood:", wx.DefaultPosition,
                                                 wx.DefaultSize, 0)
-        self.label_neigh_choice.SetFont(wx.Font(wx.FontInfo(self.font_size)))
+        self.label_neigh_choice.SetFont(wx.Font(wx.FontInfo(Frame.FONT_SIZE)))
         self.label_neigh_choice.Wrap(-1)
         # --- Neighboor combo box ---
         self.neigh_choices_array = ['Moore', 'Von Neumann', 'Hexagonal Left', 'Hexagonal Right', 'Random Hexagonal',
@@ -173,7 +180,7 @@ class Frame(wx.Frame):
         sizer_ver_grid_size_labels = wx.BoxSizer(wx.VERTICAL)
 
         self.label_grid_size = wx.StaticText(self, wx.ID_ANY, u"Grid size:", wx.DefaultPosition, wx.DefaultSize, 0)
-        self.label_grid_size.SetFont(wx.Font(wx.FontInfo(self.font_size)))
+        self.label_grid_size.SetFont(wx.Font(wx.FontInfo(Frame.FONT_SIZE)))
         self.label_grid_size.Wrap(-1)
 
         sizer_ver_grid_size_labels.Add(self.empty_label, 0, wx.ALL, 5)
@@ -185,7 +192,7 @@ class Frame(wx.Frame):
 
         self.label_grid_size_x = wx.StaticText(self, wx.ID_ANY, u"Width:")
         self.label_grid_size_x.Wrap(-1)
-        self.label_grid_size_x.SetFont(wx.Font(wx.FontInfo(self.font_size)))
+        self.label_grid_size_x.SetFont(wx.Font(wx.FontInfo(Frame.FONT_SIZE)))
         self.input_grid_size_x = wx.TextCtrl(self, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, 0)
         self.input_grid_size_x.SetValue("100")
 
@@ -198,7 +205,7 @@ class Frame(wx.Frame):
 
         self.label_grid_size_y = wx.StaticText(self, wx.ID_ANY, u"Height:")
         self.label_grid_size_y.Wrap(-1)
-        self.label_grid_size_y.SetFont(wx.Font(wx.FontInfo(self.font_size)))
+        self.label_grid_size_y.SetFont(wx.Font(wx.FontInfo(Frame.FONT_SIZE)))
         self.input_grid_size_y = wx.TextCtrl(self, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, 0)
         self.input_grid_size_y.SetValue("100")
 
@@ -216,15 +223,9 @@ class Frame(wx.Frame):
 
         self.sizer_ver_input.Add(self.create_drawing_grid_button, 0, wx.EXPAND, 5)
 
-    def __init__(self, parent):
-        wx.Frame.__init__(self, parent, id=wx.ID_ANY, title="Grain Growth", pos=wx.DefaultPosition,
-                          size=wx.Size(370, 600), style=wx.DEFAULT_FRAME_STYLE | wx.TAB_TRAVERSAL)
-        self.is_thread_alive = False
-        self.init_ui()
-
     def on_fps_click(self, event):
         fps = int(self.input_fps.GetValue())
-        if fps > 100 or fps <= 0:
+        if fps > Frame.MAX_FPS or fps <= Frame.MIN_FPS:
             self.error_dialog = wx.MessageDialog(self, 'Value has to be between 0 and 100.', 'Error changing FPS!',
                                                  wx.ICON_ERROR)
             val = self.error_dialog.ShowModal()
@@ -234,7 +235,6 @@ class Frame(wx.Frame):
                 return
         self.drawing_thread.set_fps(fps)
 
-
     def on_random_cells(self, event):
         grain_number = int(self.input_grains.GetValue())
         self.drawing_thread.grid.randomize_cells(grain_number)
@@ -243,9 +243,13 @@ class Frame(wx.Frame):
         self.drawing_thread.grid.evenly_cells(self.input_grains.GetValue())
 
     def on_pause(self, event):
+        self.statusBar.SetStatusText("Paused!")
         self.drawing_thread.grid.grain_growth = False
 
     def on_start(self, event):
+        if self.drawing_thread is None:
+            self.create_grid(event)
+        self.statusBar.SetStatusText("Running!")
         self.drawing_thread.neigh_choice = self.neigh_combo.GetValue()
         self.drawing_thread.grid.grain_growth = True
 
@@ -253,37 +257,37 @@ class Frame(wx.Frame):
         self.drawing_thread.grid.clean_grid()
 
     def change_neighbourhood(self, event):
-        print("Chosen neighbourhood: " + self.neigh_combo.GetValue())
         self.drawing_thread.neigh_choice = self.neigh_combo.GetValue()
 
     def change_bound(self, event):
-        print("Chosen bounds: " + self.bound_combo.GetValue())
         self.drawing_thread.bound_choice = self.bound_combo.GetValue()
 
-    def on_radius_cells(self,event):
+    def on_radius_cells(self, event):
         radius = int(self.input_radius_grains.GetValue())
         grains = int(self.input_grains.GetValue())
         self.drawing_thread.grid.randomize_radius_cells(radius, grains)
 
-
-
     def create_grid(self, event):
+        if self.drawing_thread is not None and self.drawing_thread.grid is not None:
+            wx.MessageBox('Cannot open two grids at once', 'Error', wx.OK | wx.ICON_ERROR)
+            return
+
         x_coordinate = int(self.input_grid_size_x.GetValue())
         y_coordinate = int(self.input_grid_size_y.GetValue())
         if x_coordinate <= 0 or y_coordinate <= 0:
-            self.error_dialog = wx.MessageDialog(self, 'Size cannot be negative.', 'Error creating grid!',
-                                                 wx.ICON_ERROR)
-            val = self.error_dialog.ShowModal()
-            self.error_dialog.Show()
+            error_dialog = wx.MessageDialog(self, 'Size cannot be negative.', 'Error creating grid!',
+                                            wx.ICON_ERROR)
+            val = error_dialog.ShowModal()
+            error_dialog.Show()
             if val == wx.ID_CANCEL:
-                self.error_dialog.Destroy()
+                error_dialog.Destroy()
                 return
         self.drawing_thread = DrawingThread()
         self.drawing_thread.set_coords(x_coordinate, y_coordinate)
         self.drawing_thread.start()
 
-    def OnExit(self, event):
-        """Close the frame, terminating the application."""
+    def OnClose(self, event):
+        self.drawing_thread.grid_window.close()
         self.drawing_thread.join()
         self.Close(True)
 
@@ -294,7 +298,7 @@ class DrawingThread(threading.Thread):
         super(DrawingThread, self).__init__()
         self.x = 100
         self.y = 100
-        self.grid = GridClass()
+        self.grid = GridClass(self)
 
     def run(self):
         self.grid.init_grid(self.x, self.y)
@@ -326,8 +330,6 @@ class DrawingThread(threading.Thread):
 
 
 if __name__ == '__main__':
-    # When this module is run (not imported) then create the app, the
-    # frame, show it, and start the event loop.
     app = wx.App()
     frm = Frame(None)
     frm.Show()

@@ -1,5 +1,6 @@
 import random
 from copy import deepcopy
+from typing import List
 
 import pygame
 import math
@@ -9,40 +10,29 @@ from .color import RandomColorDictionary
 
 class GridClass:
 
-    def __init__(self):
+    def __init__(self, thread):
 
         self.neighbourhood_type = 'Moore'
         self.grain_growth = False
-        self.bound_choice = 'Non periodical'
+        self.bound_choice = 'Periodical'
 
         # This sets the WIDTH and HEIGHT of each grid location
         self.WIDTH = 7
         self.HEIGHT = 7
-
         self.GROWTH_SPEED = 60
 
         # This sets the margin between each cell
         self.MARGIN = 1
+        self.grid = []
+        self.thread = thread
 
     def init_grid(self, x, y):
-        # Define grid sizes
         self.GRID_SIZE_X = x
         self.GRID_SIZE_Y = y
-
-        # Create a 2 dimensional array. A two dimensional
-        # array is simply a list of lists.
-        self.grid = []
         for row in range(self.GRID_SIZE_X):
-            # Add an empty array that will hold each cell
-            # in this row
             self.grid.append([])
             for column in range(self.GRID_SIZE_Y):
-                self.grid[row].append(0)  # Append a cell
-
-        # Set row 1, cell 5 to one. (Remember rows and
-        # column numbers start at zero.)
-        # self.grid[1][5] = 1
-        # self.grid[19][19] = 1
+                self.grid[row].append(0)
 
     def clean_grid(self):
         for row in range(self.GRID_SIZE_X):
@@ -72,7 +62,7 @@ class GridClass:
 
         color_dict = RandomColorDictionary()
         already_placed_circles = []
-        radius_squared = radius**2
+        radius_squared = radius ** 2
 
         random_row = random.randint(0, self.GRID_SIZE_X - 1)
         random_column = random.randint(0, self.GRID_SIZE_Y - 1)
@@ -89,12 +79,12 @@ class GridClass:
             for cell in already_placed_circles:
                 circle_row = cell[0]
                 circle_column = cell[1]
-                distance_squared = (random_row - circle_row)**2 + (random_column - circle_column)**2
+                distance_squared = (random_row - circle_row) ** 2 + (random_column - circle_column) ** 2
                 if distance_squared <= radius_squared:
                     inside_circle = True
                     break
 
-            if inside_circle == False:
+            if not inside_circle:
                 already_placed_circles.append([random_row, random_column])
             else:
                 ERROR_THRESHOLD += 1
@@ -106,18 +96,6 @@ class GridClass:
             column = already_placed_circles[i][1]
             color = random.choice(list(color_dict.colors.keys()))
             self.grid[row][column] = color
-
-        # =========== DEBUG MODE ================
-        print("ERROR_THRESHOLD = ( " + str(ERROR_THRESHOLD) + " / " + str(ERROR_THRESHOLD_LIMIT) + " )")
-        print("RANDOMIZED CELLS = " + str(len(already_placed_circles)))
-        print("PREFERED NUMBER OF RANDOMIZED CELLS = " + str(cell_amount))
-        # ACTUAL_CELLS = 0
-        # for row in range(self.GRID_SIZE_X):
-        #     for column in range(self.GRID_SIZE_Y):
-        #         if self.grid[row][column] != 0:
-        #             ACTUAL_CELLS +=1
-        #
-        # print("ACTUAL CELLS = " + str(ACTUAL_CELLS))
 
     def evenly_cells(self, cell_amount):
         color_dict = RandomColorDictionary()
@@ -135,24 +113,15 @@ class GridClass:
                 self.grid[row][column] = color
 
 
-
-
-
 class PyGameWindow:
 
     def __init__(self, grid):
-        # Initialize pygame
         pygame.init()
-        # Set the HEIGHT and WIDTH of the screen
-        # WINDOW_SIZE = [600, 600]
         self.WINDOW_SIZE = [grid.GRID_SIZE_Y * (grid.HEIGHT + grid.MARGIN) + grid.MARGIN,
                             grid.GRID_SIZE_X * (grid.WIDTH + grid.MARGIN) + grid.MARGIN]
         self.screen = pygame.display.set_mode(self.WINDOW_SIZE)
 
-        # Set title of screen
         pygame.display.set_caption("Grain Growth")
-
-        # Loop until the user clicks the close button.
         self.done = False
         self.color_class = RandomColorDictionary()
         self.gridClass = grid
@@ -172,357 +141,201 @@ class PyGameWindow:
         else:
             return max(color_dict)
 
-    def moore_growth(self, old_grid, row, column):
+    def finish_drawing(self, conditions: List, old_grid: List,
+                       row: int, column: int) -> None:
         neighbours = []
-
-        if column + 1 < self.gridClass.GRID_SIZE_Y:
-            neighbours.append(old_grid[row][column + 1])
-
-        if row - 1 >= 0 and column + 1 < self.gridClass.GRID_SIZE_Y:
-            neighbours.append(old_grid[row - 1][column + 1])
-
-        if row - 1 >= 0:
-            neighbours.append(old_grid[row - 1][column])
-
-        if row - 1 >= 0 and column - 1 >= 0:
-            neighbours.append(old_grid[row - 1][column - 1])
-
-        if column - 1 >= 0:
-            neighbours.append(old_grid[row][column - 1])
-
-        if row + 1 < self.gridClass.GRID_SIZE_X and column - 1 >= 0:
-            neighbours.append(old_grid[row + 1][column - 1])
-
-        if row + 1 < self.gridClass.GRID_SIZE_X:
-            neighbours.append(old_grid[row + 1][column])
-
-        if row + 1 < self.gridClass.GRID_SIZE_X and column + 1 < self.gridClass.GRID_SIZE_Y:
-            neighbours.append(old_grid[row + 1][column + 1])
-
-        if self.gridClass.bound_choice == 'Periodical':
-            if column + 1 == self.gridClass.GRID_SIZE_Y:
-                neighbours.append(old_grid[row][0])
-
-            if row - 1 == -1 and column + 1 == self.gridClass.GRID_SIZE_Y:
-                neighbours.append(old_grid[self.gridClass.GRID_SIZE_X - 1][0])
-
-            if row - 1 == -1:
-                neighbours.append(old_grid[self.gridClass.GRID_SIZE_X - 1][column])
-
-            if row - 1 == -1 and column - 1 == -1:
-                neighbours.append(old_grid[self.gridClass.GRID_SIZE_X - 1][self.gridClass.GRID_SIZE_Y - 1])
-
-            if column - 1 == -1:
-                neighbours.append(old_grid[row][self.gridClass.GRID_SIZE_Y - 1])
-
-            if row + 1 == self.gridClass.GRID_SIZE_X and column - 1 == -1:
-                neighbours.append(old_grid[0][self.gridClass.GRID_SIZE_Y - 1])
-
-            if row + 1 == self.gridClass.GRID_SIZE_X:
-                neighbours.append(old_grid[0][column])
-
-            if row + 1 == self.gridClass.GRID_SIZE_X and column + 1 == self.gridClass.GRID_SIZE_Y:
-                neighbours.append(old_grid[0][0])
+        for possible_neigh in conditions:
+            is_neighbour = possible_neigh[0]
+            if is_neighbour:
+                x = possible_neigh[1][0]
+                y = possible_neigh[1][1]
+                neighbours.append(old_grid[x][y])
 
         color_to_paint = self.determine_color(neighbours)
         self.gridClass.grid[row][column] = color_to_paint
+
+    def moore_growth(self, old_grid, row, column):
+        moores = [(column + 1 < self.gridClass.GRID_SIZE_Y,                                          (row,     column + 1)),
+                  (row - 1 >= 0 and column + 1 < self.gridClass.GRID_SIZE_Y,                         (row - 1, column + 1)),
+                  (row - 1 >= 0,                                                                     (row - 1, column)),
+                  (row - 1 >= 0 and column - 1 >= 0,                                                 (row - 1, column - 1)),
+                  (column - 1 >= 0,                                                                  (row,     column - 1)),
+                  (row + 1 < self.gridClass.GRID_SIZE_X and column - 1 >= 0,                         (row + 1, column - 1)),
+                  (row + 1 < self.gridClass.GRID_SIZE_X,                                             (row + 1, column)),
+                  (row + 1 < self.gridClass.GRID_SIZE_X and column + 1 < self.gridClass.GRID_SIZE_Y, (row + 1, column + 1))]
+
+        if self.gridClass.bound_choice == 'Periodical':
+            periodical_moores = [(column + 1 == self.gridClass.GRID_SIZE_Y,                                           (row, 0)),
+                                 (row - 1 == -1 and column + 1 == self.gridClass.GRID_SIZE_Y,                         (self.gridClass.GRID_SIZE_X - 1, 0)),
+                                 (row - 1 == -1,                                                                      (self.gridClass.GRID_SIZE_X - 1, column)),
+                                 (row - 1 == -1 and column - 1 == -1,                                                 (self.gridClass.GRID_SIZE_X - 1, self.gridClass.GRID_SIZE_Y - 1)),
+                                 (column - 1 == -1,                                                                   (row, self.gridClass.GRID_SIZE_Y - 1)),
+                                 (row + 1 == self.gridClass.GRID_SIZE_X and column - 1 == -1,                         (0, self.gridClass.GRID_SIZE_Y - 1)),
+                                 (row + 1 == self.gridClass.GRID_SIZE_X,                                              (0, column)),
+                                 (row + 1 == self.gridClass.GRID_SIZE_X and column + 1 == self.gridClass.GRID_SIZE_Y, (0, 0))]
+            moores += periodical_moores
+
+        self.finish_drawing(conditions=moores, old_grid=old_grid, row=row, column=column)
 
     def von_neumann_growth(self, old_grid, row, column):
-        neighbours = []
-
-        if column + 1 < self.gridClass.GRID_SIZE_Y:
-            neighbours.append(old_grid[row][column + 1])
-
-        if row - 1 >= 0:
-            neighbours.append(old_grid[row - 1][column])
-
-        if column - 1 >= 0:
-            neighbours.append(old_grid[row][column - 1])
-
-        if row + 1 < self.gridClass.GRID_SIZE_X:
-            neighbours.append(old_grid[row + 1][column])
+        von_neumanns = [(column + 1 < self.gridClass.GRID_SIZE_Y, (row,    column + 1)),
+                        (row - 1 >= 0,                            (row - 1,column)),
+                        (column - 1 >= 0,                         (row,    column - 1)),
+                        (row + 1 < self.gridClass.GRID_SIZE_X,    (row + 1,column))]
 
         if self.gridClass.bound_choice == 'Periodical':
-            if column + 1 == self.gridClass.GRID_SIZE_Y:
-                neighbours.append(old_grid[row][0])
+            perodical_neumnas = [(column + 1 == self.gridClass.GRID_SIZE_Y, (row, 0)),
+                                 (row - 1 == -1, (self.gridClass.GRID_SIZE_X - 1, column)),
+                                 (column - 1 == -1, (row, self.gridClass.GRID_SIZE_Y - 1)),
+                                 (row + 1 == self.gridClass.GRID_SIZE_X, (0, column))]
+            von_neumanns += perodical_neumnas
 
-            if row - 1 == -1:
-                neighbours.append(old_grid[self.gridClass.GRID_SIZE_X - 1][column])
-
-            if column - 1 == -1:
-                neighbours.append(old_grid[row][self.gridClass.GRID_SIZE_Y - 1])
-
-            if row + 1 == self.gridClass.GRID_SIZE_X:
-                neighbours.append(old_grid[0][column])
-
-        color_to_paint = self.determine_color(neighbours)
-        self.gridClass.grid[row][column] = color_to_paint
+        self.finish_drawing(conditions=von_neumanns, old_grid=old_grid, row=row, column=column)
 
     def hexagonal_right_growth(self, old_grid, row, column):
-        neighbours = []
-
-        if row - 1 >= 0 and column + 1 < self.gridClass.GRID_SIZE_Y:
-            neighbours.append(old_grid[row - 1][column + 1])
-
-        if column + 1 < self.gridClass.GRID_SIZE_Y:
-            neighbours.append(old_grid[row][column + 1])
-
-        if row - 1 >= 0:
-            neighbours.append(old_grid[row - 1][column])
-
-        if column - 1 >= 0:
-            neighbours.append(old_grid[row][column - 1])
-
-        if row + 1 < self.gridClass.GRID_SIZE_X and column - 1 >= 0:
-            neighbours.append(old_grid[row + 1][column - 1])
-
-        if row + 1 < self.gridClass.GRID_SIZE_X:
-            neighbours.append(old_grid[row + 1][column])
+        hexagonal_rights = [(row - 1 >= 0 and column + 1 < self.gridClass.GRID_SIZE_Y,  (row - 1, column + 1)),
+                            (column + 1 < self.gridClass.GRID_SIZE_Y,                   (row,     column + 1)),
+                            (row - 1 >= 0,                                              (row - 1, column)),
+                            (column - 1 >= 0,                                           (row,     column - 1)),
+                            (row + 1 < self.gridClass.GRID_SIZE_X and column - 1 >= 0,  (row + 1, column - 1)),
+                            (row + 1 < self.gridClass.GRID_SIZE_X,                      (row + 1, column))]
 
         if self.gridClass.bound_choice == 'Periodical':
+            hexagonal_rights_periodicals = [(row - 1 == -1 and column + 1 == self.gridClass.GRID_SIZE_Y,    (self.gridClass.GRID_SIZE_X - 1, 0)),
+                                            (column + 1 == self.gridClass.GRID_SIZE_Y,                      (row, 0)),
+                                            (row - 1 == -1,                                                 (self.gridClass.GRID_SIZE_X - 1, column)),
+                                            (column - 1 == -1,                                              (row, self.gridClass.GRID_SIZE_Y - 1)),
+                                            (row + 1 == self.gridClass.GRID_SIZE_X and column - 1 == -1,    (0, self.gridClass.GRID_SIZE_Y - 1)),
+                                            (row + 1 == self.gridClass.GRID_SIZE_X,                         (0, column))]
 
-            if row - 1 == -1 and column + 1 == self.gridClass.GRID_SIZE_Y:
-                neighbours.append(old_grid[self.gridClass.GRID_SIZE_X - 1][0])
+            hexagonal_rights += hexagonal_rights_periodicals
 
-            if column + 1 == self.gridClass.GRID_SIZE_Y:
-                neighbours.append(old_grid[row][0])
-
-            if row - 1 == -1:
-                neighbours.append(old_grid[self.gridClass.GRID_SIZE_X - 1][column])
-
-            if column - 1 == -1:
-                neighbours.append(old_grid[row][self.gridClass.GRID_SIZE_Y - 1])
-
-            if row + 1 == self.gridClass.GRID_SIZE_X and column - 1 == -1:
-                neighbours.append(old_grid[0][self.gridClass.GRID_SIZE_Y - 1])
-
-            if row + 1 == self.gridClass.GRID_SIZE_X:
-                neighbours.append(old_grid[0][column])
-
-        color_to_paint = self.determine_color(neighbours)
-        self.gridClass.grid[row][column] = color_to_paint
+        self.finish_drawing(conditions=hexagonal_rights, old_grid=old_grid, row=row, column=column)
 
     def hexagonal_left_growth(self, old_grid, row, column):
-        neighbours = []
-
-        if row + 1 < self.gridClass.GRID_SIZE_X:
-            neighbours.append(old_grid[row + 1][column])
-
-        if column + 1 < self.gridClass.GRID_SIZE_Y:
-            neighbours.append(old_grid[row][column + 1])
-
-        if row - 1 >= 0:
-            neighbours.append(old_grid[row - 1][column])
-
-        if column - 1 >= 0:
-            neighbours.append(old_grid[row][column - 1])
-
-        if row - 1 >= 0 and column - 1 >= 0:
-            neighbours.append(old_grid[row - 1][column - 1])
-
-        if row + 1 < self.gridClass.GRID_SIZE_X and column + 1 < self.gridClass.GRID_SIZE_Y:
-            neighbours.append(old_grid[row + 1][column + 1])
+        hexagonal_lefties = [(row + 1 < self.gridClass.GRID_SIZE_X,                                             (row + 1,column)),
+                             (column + 1 < self.gridClass.GRID_SIZE_Y,                                          (row,    column + 1)),
+                             (row - 1 >= 0,                                                                     (row - 1,column)),
+                             (column - 1 >= 0,                                                                  (row,    column - 1)),
+                             (row - 1 >= 0 and column - 1 >= 0,                                                 (row - 1,column - 1)),
+                             (row + 1 < self.gridClass.GRID_SIZE_X and column + 1 < self.gridClass.GRID_SIZE_Y, (row + 1,column + 1))]
 
         if self.gridClass.bound_choice == 'Periodical':
+            hexagonal_lefties_periodicals = [(row + 1 == self.gridClass.GRID_SIZE_X,                            (0,column)),
+                                             (column + 1 == self.gridClass.GRID_SIZE_Y,                         (row,0)),
+                                             (row - 1 == -1,                                                    (self.gridClass.GRID_SIZE_X - 1, column)),
+                                             (column - 1 == -1,                                                 (row,self.gridClass.GRID_SIZE_Y - 1)),
+                                             (row - 1 == -1 and column - 1 == -1,                               (self.gridClass.GRID_SIZE_X - 1,self.gridClass.GRID_SIZE_Y - 1)),
+                                             (row + 1 == self.gridClass.GRID_SIZE_X and column + 1 == self.gridClass.GRID_SIZE_Y,   (0,0))]
 
-            if row + 1 == self.gridClass.GRID_SIZE_X:
-                neighbours.append(old_grid[0][column])
+            hexagonal_lefties += hexagonal_lefties_periodicals
 
-            if column + 1 == self.gridClass.GRID_SIZE_Y:
-                neighbours.append(old_grid[row][0])
+        self.finish_drawing(conditions=hexagonal_lefties, old_grid=old_grid, row=row, column=column)
 
-            if row - 1 == -1:
-                neighbours.append(old_grid[self.gridClass.GRID_SIZE_X - 1][column])
-
-            if column - 1 == -1:
-                neighbours.append(old_grid[row][self.gridClass.GRID_SIZE_Y - 1])
-
-            if row - 1 == -1 and column - 1 == -1:
-                neighbours.append(old_grid[self.gridClass.GRID_SIZE_X - 1][self.gridClass.GRID_SIZE_Y - 1])
-
-            if row + 1 == self.gridClass.GRID_SIZE_X and column + 1 == self.gridClass.GRID_SIZE_Y:
-                neighbours.append(old_grid[0][0])
-
-        color_to_paint = self.determine_color(neighbours)
-        self.gridClass.grid[row][column] = color_to_paint
 
     def hexagonal_random_growth(self, old_grid, row, column):
-        random_int = random.randint(1, 2)
-        if random_int == 1:
-            self.hexagonal_left_growth(old_grid, row, column)
-        elif random_int == 2:
-            self.hexagonal_right_growth(old_grid, row, column)
+        hexagonal = random.choice([self.hexagonal_left_growth, self.hexagonal_right_growth])
+        hexagonal(old_grid, row, column)
 
     def pentagonal_random_growth(self, old_grid, row, column):
-        neighbours = []
         random_int = random.randint(1, 4)
         if random_int == 1:
-            # 0 0 0
-            # 1 X 1
-            # 1 1 1
-            if row + 1 < self.gridClass.GRID_SIZE_X:
-                neighbours.append(old_grid[row + 1][column])
-
-            if row - 1 >= 0:
-                neighbours.append(old_grid[row - 1][column])
-
-            if column - 1 >= 0:
-                neighbours.append(old_grid[row][column - 1])
-
-            if row + 1 < self.gridClass.GRID_SIZE_X and column - 1 >= 0:
-                neighbours.append(old_grid[row + 1][column - 1])
-
-            if row - 1 >= 0 and column - 1 >= 0:
-                neighbours.append(old_grid[row - 1][column - 1])
+            down = [(row + 1 < self.gridClass.GRID_SIZE_X,                     (row + 1, column)),
+                    (row - 1 >= 0,                                             (row - 1, column)),
+                    (column - 1 >= 0,                                          (row,     column - 1)),
+                    (row + 1 < self.gridClass.GRID_SIZE_X and column - 1 >= 0, (row + 1, column - 1)),
+                    (row - 1 >= 0 and column - 1 >= 0,                         (row - 1, column - 1))]
 
             if self.gridClass.bound_choice == 'Periodical':
-                if row + 1 == self.gridClass.GRID_SIZE_X:
-                    neighbours.append(old_grid[0][column])
+                down_perodicals = [(row + 1 == self.gridClass.GRID_SIZE_X,                       (0, column)),
+                                   (row - 1 == -1,                                               (self.gridClass.GRID_SIZE_X - 1, column)),
+                                   (column - 1 == -1,                                            (row, self.gridClass.GRID_SIZE_Y - 1)),
+                                   (row + 1 == self.gridClass.GRID_SIZE_X and column - 1 == -1,  (0, self.gridClass.GRID_SIZE_Y - 1)),
+                                   (row - 1 == -1 and column - 1 == -1,                          (self.gridClass.GRID_SIZE_X - 1, self.gridClass.GRID_SIZE_Y - 1))]
 
-                if row - 1 == -1:
-                    neighbours.append(old_grid[self.gridClass.GRID_SIZE_X - 1][column])
+                down += down_perodicals
 
-                if column - 1 == -1:
-                    neighbours.append(old_grid[row][self.gridClass.GRID_SIZE_Y - 1])
-
-                if row + 1 == self.gridClass.GRID_SIZE_X and column - 1 == -1:
-                    neighbours.append(old_grid[0][self.gridClass.GRID_SIZE_Y - 1])
-
-                if row - 1 == -1 and column - 1 == -1:
-                    neighbours.append(old_grid[self.gridClass.GRID_SIZE_X - 1][self.gridClass.GRID_SIZE_Y - 1])
+                self.finish_drawing(conditions=down, old_grid=old_grid, row=row, column=column)
 
         elif random_int == 2:
-            # 1 1 0
-            # 1 X 0
-            # 1 1 0
-            if row - 1 >= 0:
-                neighbours.append(old_grid[row - 1][column])
+            lefts = [(row - 1 >= 0,                                             (row - 1, column)),
+                     (column - 1 >= 0,                                          (row,     column - 1)),
+                     (column + 1 < self.gridClass.GRID_SIZE_Y,                  (row,     column + 1)),
+                     (row - 1 >= 0 and column - 1 >= 0,                         (row - 1, column - 1)),
+                     (row - 1 >= 0 and column + 1 < self.gridClass.GRID_SIZE_Y, (row - 1, column + 1))]
 
-            if column - 1 >= 0:
-                neighbours.append(old_grid[row][column - 1])
+            if self.gridClass.bound_choice == 'Perodical':
+                lefts_perodicals = [(row - 1 == -1,                                                 (self.gridClass.GRID_SIZE_X - 1, column)),
+                                    (column - 1 == -1,                                              (row, self.gridClass.GRID_SIZE_Y - 1)),
+                                    (column + 1 == self.gridClass.GRID_SIZE_Y,                      (row, 0)),
+                                    (row - 1 == -1 and column - 1 == -1,                            (self.gridClass.GRID_SIZE_X - 1, self.gridClass.GRID_SIZE_Y - 1)),
+                                    (row - 1 == -1 and column + 1 == self.gridClass.GRID_SIZE_Y,    (self.gridClass.GRID_SIZE_X - 1, 0))]
 
-            if column + 1 < self.gridClass.GRID_SIZE_Y:
-                neighbours.append(old_grid[row][column + 1])
+                lefts += lefts_perodicals
 
-            if row - 1 >= 0 and column - 1 >= 0:
-                neighbours.append(old_grid[row - 1][column - 1])
-
-            if row - 1 >= 0 and column + 1 < self.gridClass.GRID_SIZE_Y:
-                neighbours.append(old_grid[row - 1][column + 1])
-
-            if self.gridClass.bound_choice == 'Periodical':
-                if row - 1 == -1:
-                    neighbours.append(old_grid[self.gridClass.GRID_SIZE_X - 1][column])
-
-                if column - 1 == -1:
-                    neighbours.append(old_grid[row][self.gridClass.GRID_SIZE_Y - 1])
-
-                if column + 1 == self.gridClass.GRID_SIZE_Y:
-                    neighbours.append(old_grid[row][0])
-
-                if row - 1 == -1 and column - 1 == -1:
-                    neighbours.append(old_grid[self.gridClass.GRID_SIZE_X - 1][self.gridClass.GRID_SIZE_Y - 1])
-
-                if row - 1 == -1 and column + 1 == self.gridClass.GRID_SIZE_Y:
-                    neighbours.append(old_grid[self.gridClass.GRID_SIZE_X - 1][0])
+            self.finish_drawing(conditions=lefts, old_grid=old_grid, row=row, column=column)
 
 
         elif random_int == 3:
-            # 1 1 1
-            # 1 X 1
-            # 0 0 0
-            if row - 1 >= 0:
-                neighbours.append(old_grid[row - 1][column])
-
-            if row + 1 < self.gridClass.GRID_SIZE_X:
-                neighbours.append(old_grid[row + 1][column])
-
-            if column + 1 < self.gridClass.GRID_SIZE_Y:
-                neighbours.append(old_grid[row][column + 1])
-
-            if row - 1 >= 0 and column + 1 < self.gridClass.GRID_SIZE_Y:
-                neighbours.append(old_grid[row - 1][column + 1])
-
-            if row + 1 < self.gridClass.GRID_SIZE_X and column + 1 < self.gridClass.GRID_SIZE_X:
-                neighbours.append(old_grid[row + 1][column + 1])
+            uppers = [(row - 1 >= 0,                                                                            (row - 1,column)),
+                      (row + 1 < self.gridClass.GRID_SIZE_X,                                                    (row + 1,column)),
+                      (column + 1 < self.gridClass.GRID_SIZE_Y,                                                 (row,    column + 1)),
+                      (row - 1 >= 0 and column + 1 < self.gridClass.GRID_SIZE_Y,                                (row - 1,column + 1)),
+                      (row + 1 < self.gridClass.GRID_SIZE_X and column + 1 < self.gridClass.GRID_SIZE_X,        (row + 1,column + 1))]
 
             if self.gridClass.bound_choice == 'Periodical':
-                if row - 1 == -1:
-                    neighbours.append(old_grid[self.gridClass.GRID_SIZE_X - 1][column])
+                uppers_perodicals = [(row - 1 == -1,                                                                        (self.gridClass.GRID_SIZE_X - 1,column)),
+                                     (row + 1 == self.gridClass.GRID_SIZE_X,                                                (0,column)),
+                                     (column + 1 == self.gridClass.GRID_SIZE_Y,                                             (row,0)),
+                                     (row - 1 == -1 and column + 1 == self.gridClass.GRID_SIZE_Y,                           (self.gridClass.GRID_SIZE_X - 1,0)),
+                                     (row + 1 == self.gridClass.GRID_SIZE_X and column + 1 == self.gridClass.GRID_SIZE_X,   (0,0)),]
 
-                if row + 1 == self.gridClass.GRID_SIZE_X:
-                    neighbours.append(old_grid[0][column])
+                uppers += uppers_perodicals
 
-                if column + 1 == self.gridClass.GRID_SIZE_Y:
-                    neighbours.append(old_grid[row][0])
-
-                if row - 1 == -1 and column + 1 == self.gridClass.GRID_SIZE_Y:
-                    neighbours.append(old_grid[self.gridClass.GRID_SIZE_X - 1][0])
-
-                if row + 1 == self.gridClass.GRID_SIZE_X and column + 1 == self.gridClass.GRID_SIZE_X:
-                    neighbours.append(old_grid[0][0])
+                self.finish_drawing(conditions=uppers, old_grid=old_grid, row=row, column=column)
 
         elif random_int == 4:
-            # 0 1 1
-            # 0 X 1
-            # 0 1 1
-            if row + 1 < self.gridClass.GRID_SIZE_X and column + 1 < self.gridClass.GRID_SIZE_Y:
-                neighbours.append(old_grid[row + 1][column + 1])
 
-            if column + 1 < self.gridClass.GRID_SIZE_Y:
-                neighbours.append(old_grid[row][column + 1])
-
-            if row + 1 < self.gridClass.GRID_SIZE_X:
-                neighbours.append(old_grid[row + 1][column])
-
-            if row + 1 < self.gridClass.GRID_SIZE_X and column - 1 >= 0:
-                neighbours.append(old_grid[row + 1][column - 1])
-
-            if column - 1 >= 0:
-                neighbours.append(old_grid[row][column - 1])
+            righties = [(row + 1 < self.gridClass.GRID_SIZE_X and column + 1 < self.gridClass.GRID_SIZE_Y,  (row + 1,column + 1)),
+                        (column + 1 < self.gridClass.GRID_SIZE_Y,                                           (row,    column +1)),
+                        (row + 1 < self.gridClass.GRID_SIZE_X,                                              (row + 1,column)),
+                        (row + 1 < self.gridClass.GRID_SIZE_X and column - 1 >= 0,                          (row + 1,column - 1)),
+                        (column - 1 >= 0,                                                                   (row,    column - 1))]
 
             if self.gridClass.bound_choice == 'Periodical':
-                if row + 1 == self.gridClass.GRID_SIZE_X and column + 1 == self.gridClass.GRID_SIZE_X:
-                    neighbours.append(old_grid[0][0])
+                righties_periodical = [(row + 1 == self.gridClass.GRID_SIZE_X and column + 1 == self.gridClass.GRID_SIZE_X, (0,0)),
+                                       (column + 1 == self.gridClass.GRID_SIZE_Y,                                           (row,0)),
+                                       (row + 1 == self.gridClass.GRID_SIZE_X,                                              (0,column)),
+                                       (row + 1 == self.gridClass.GRID_SIZE_X and column - 1 == -1,                         (0,self.gridClass.GRID_SIZE_Y - 1)),
+                                       (column - 1 == -1,                                                                   (row,self.gridClass.GRID_SIZE_Y - 1))]
 
-                if column + 1 == self.gridClass.GRID_SIZE_Y:
-                    neighbours.append(old_grid[row][0])
+                righties += righties_periodical
 
-                if row + 1 == self.gridClass.GRID_SIZE_X:
-                    neighbours.append(old_grid[0][column])
+            self.finish_drawing(conditions=righties, old_grid=old_grid, row=row, column=column)
 
-                if row + 1 == self.gridClass.GRID_SIZE_X and column - 1 == -1:
-                    neighbours.append(old_grid[0][self.gridClass.GRID_SIZE_Y - 1])
-
-                if column - 1 == -1:
-                    neighbours.append(old_grid[row][self.gridClass.GRID_SIZE_Y - 1])
-
-        color_to_paint = self.determine_color(neighbours)
-        self.gridClass.grid[row][column] = color_to_paint
+    def close(self):
+        self.done = True
+        self.gridClass.thread.grid = None
+        del self.gridClass
+        pygame.quit()
+        exit()
 
     def main_loop(self):
         # -------- Main Program Loop -----------
         while not self.done:
-            for event in pygame.event.get():  # User did something
-                if event.type == pygame.QUIT:  # If user clicked close
-                    self.done = True  # Flag that we are done so we exit this loop
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.close()
                 elif event.type == pygame.MOUSEBUTTONDOWN:
-                    # User clicks the mouse. Get the position
                     pos = pygame.mouse.get_pos()
-                    # Change the x/y screen coordinates to grid coordinates
                     column = pos[0] // (self.gridClass.WIDTH + self.gridClass.MARGIN)
                     row = pos[1] // (self.gridClass.HEIGHT + self.gridClass.MARGIN)
-                    # Set that location to random color
                     self.gridClass.grid[row][column] = random.choice(list(self.color_class.colors))
-                    # TEST Methods of click in here
-                    print("Click ", pos, "Grid coordinates: ", row, column)
 
-            # Check grid for neighbours
             if self.gridClass.grain_growth:
                 old_grid = deepcopy(self.gridClass.grid)
                 for row in range(self.gridClass.GRID_SIZE_X):
                     for column in range(self.gridClass.GRID_SIZE_Y):
-                        # MOORE test
                         if old_grid[row][column] == 0:
                             if self.gridClass.neighbourhood_type == 'Moore':
                                 self.moore_growth(old_grid, row, column)
@@ -536,8 +349,6 @@ class PyGameWindow:
                                 self.hexagonal_random_growth(old_grid, row, column)
                             elif self.gridClass.neighbourhood_type == 'Random Pentagonal':
                                 self.pentagonal_random_growth(old_grid, row, column)
-
-            # Set the screen background
             self.screen.fill(self.color_class.colors['black'])
 
             # Draw the grid
@@ -552,13 +363,8 @@ class PyGameWindow:
                                       (self.gridClass.MARGIN + self.gridClass.HEIGHT) * row + self.gridClass.MARGIN,
                                       self.gridClass.WIDTH,
                                       self.gridClass.HEIGHT])
-            # Limit to 60 frames per second
             self.clock.tick(self.gridClass.GROWTH_SPEED)
 
-            # Go ahead and update the screen with what we've drawn.
             pygame.display.flip()
 
-        # Be IDLE friendly. If you forget this line, the program will 'hang'
-        # on exit.
-        pygame.quit()
-        exit()
+        self.close()
