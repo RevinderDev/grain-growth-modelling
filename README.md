@@ -36,7 +36,7 @@ $ python main.py
 
 # Last words
 
-You cannot have 2 opens at one time.
+You cannot have 2 windows opens at one time.
 The limitation sadly comes from the PyGame library which is used to draw said grid as it can have only one context window at once.
 Feel free to download the code and play with it however you like. Don't expect too much of it, as it was only students project from years ago and it does include
 some terrible design flaws. Have fun!
